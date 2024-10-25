@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Админка</title>
+    <link rel="stylesheet" href="mer.css">
+</head>
+<body>
+    <div class='login-container' id='loginContainer' style='display:none;'>
+        <form id='adminLoginForm'>
+            <h2>Введите пароль для доступа к админке</h2>
+            <div class='form-group'>
+                <label for='admin-password'>Пароль:</label>
+                <input type='password' id='admin-password' required>
+                <button type='button' id='togglePassword'>👁️</button> 
+            </div>
+            <button type='submit'>Войти</button>
+        </form>
+    </div>
+
+    <!-- Боковая панель админки -->
+    <div class='sidebar' id='sidebar' style='display:none;'>
+        <img src='free-icon-boy-4537069.png' alt='Логотип'> 
+        <h2>Админка</h2>
+        <a href='correct.html'>Управление пользователями</a>
+        <a href='#' id='viewOrdersLink'>Заявки мероприятий</a> 
+        <a id='logoutBtn' href='#'>Выход</a> 
+    </div>
+
+    <!-- Основное содержимое админки -->
+    <section class='admin-panel' id='adminContent' style='display:none;'> 
+        <h2>Заказы мероприятий</h2> 
+        <!-- Таблица заказов -->
+        <table id='orderTable'> 
+            <thead> 
+                <tr> 
+                    <th>Код мероприятия</th> 
+                    <th>Название мероприятия</th> 
+                    <th>Дата и время проведения</th> 
+                    <th>Место проведения</th> 
+                    <th>Ответственное лицо</th> 
+                    <th>Список участников</th> 
+                    <th>Состояние</th> 
+                    <th>Действия</th>  
+                </tr> 
+            </thead> 
+            <tbody></tbody> <!-- Здесь будут загружены заказы --> 
+        </table>
+
+        <!-- Сообщение об успехе или ошибке --> 
+        <div id='orderMessage'></div>
+
+    </section>
+
+    <!-- Скрипт для работы админки -->
+    <script>
+        const adminPassword = 'ewqewq'; 
+
+        if (!localStorage.getItem("admin")) {  
+            localStorage.setItem("admin", JSON.stringify({ password: adminPassword }));  
+        }
+
+        if (sessionStorage.getItem("isAdminLoggedIn")) {  
+            document.querySelector("#loginContainer").style.display = "none";  
+            document.querySelector("#sidebar").style.display = "block";  
+            document.querySelector("#adminContent").style.display = "block";  
+
+            loadOrders();  
+        } else {  
+            document.querySelector("#loginContainer").style.display = "flex";  
+        }
+
+        // Обработчик события для входа в админку
+        document.querySelector("#adminLoginForm").addEventListener("submit", function(event) {  
+            event.preventDefault();  
+            const passwordInputValue = document.querySelector("#admin-password").value;
+
+            if (passwordInputValue === adminPassword) {  
+                sessionStorage.setItem("isAdminLoggedIn", "true");  
+                loadOrders();  
+                showAdminPanel();
+            } else {  
+                alert("Неверный пароль!");  
+            }  
+        });
+
+        function showAdminPanel() {  
+            document.querySelector("#loginContainer").style.display = "none";  
+            document.querySelector("#sidebar").style.display = "block";  
+            document.querySelector("#adminContent").style.display = "block";  
+        }
+
+        // Функция для загрузки заказов мероприятий
+        function loadOrders() {  
+            const orders = JSON.parse(localStorage.getItem("eventOrders")) || [];  
+
+            const tbody = document.querySelector("#orderTable tbody");  
+
+            tbody.innerHTML = ""; // Очищаем предыдущие данные
+
+            orders.forEach((order, index) => {  
+                const row = document.createElement("tr");  
+
+                row.innerHTML = `
+                    <td>${order.code}</td>
+                    <td>${order.name}</td>
+                    <td>${order.dateTime}</td>
+                    <td>${order.location}</td>
+                    <td>${order.responsible}</td>
+                    <td>${order.participants}</td>
+                    <td>
+                        <select onchange='updateOrderStatus(${index}, this.value)'>
+                            <option value='в процессе' ${order.status === 'в процессе' ? 'selected' : ''}>В процессе</option>
+                            <option value='принято' ${order.status === 'принято' ? 'selected' : ''}>Принято</option>
+                            <option value='отказано' ${order.status === 'отказано' ? 'selected' : ''}>Отказано</option>
+                        </select>
+                    </td>
+                    <td><button onclick='deleteOrder(${index})'>Удалить</button></td>`;
+                
+                tbody.appendChild(row);
+            });
+        }
+
+        function updateOrderStatus(index, status) {  
+            const orders = JSON.parse(localStorage.getItem("eventOrders")) || [];  
+
+            orders[index].status = status;  
+
+            localStorage.setItem("eventOrders", JSON.stringify(orders));  
+        }
+
+        function deleteOrder(index) {  
+            const orders = JSON.parse(localStorage.getItem("eventOrders")) || [];  
+
+            orders.splice(index, 1);  
+
+            localStorage.setItem("eventOrders", JSON.stringify(orders));  
+
+            loadOrders();  
+        }
+
+        // Выход из админки
+        document.querySelector("#logoutBtn").addEventListener("click", function() {  
+            sessionStorage.removeItem("isAdminLoggedIn");  
+            window.location.reload();  
+        });
+    </script>
+</body>
+</html>

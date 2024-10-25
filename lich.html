@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Личный кабинет</title>
+    <link rel="stylesheet" href="kabinet.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Личный кабинет</h1>
+        <div class="profile-info">
+            <img src="free-icon-boy-4537069.png" alt="Фото профиля" class="profile-pic" id="profile-pic">
+            <div class="user-details">
+                <h2 id="user-name">Иван Иванов</h2>
+                <p id="user-email">Email: ivan@example.com</p>
+                <p id="user-phone">Телефон: +7 (999) 123-45-67</p>
+            </div>
+        </div>
+
+        <div class="menu">
+            <a href="#" class="menu-item" onclick="toggleEditForm()">Редактировать профиль</a>
+            <a href="#" class="menu-item" onclick="toggleEventsList()">Мои Заявки</a>
+            <a href="#" class="menu-item" onclick="toggleOrderEventForm()">Заказать мероприятие</a>
+            <a href="#" class="menu-item">Настройки</a>
+            <a href="#" class="menu-item" onclick="logout()">Выйти</a>
+        </div>
+
+       <!-- Форма редактирования профиля -->
+       <div class="edit-form" id="edit-form">
+           <h3>Редактировать профиль</h3>
+           <input type="text" id="edit-name" placeholder="Имя" />
+           <input type="email" id="edit-email" placeholder="Email" />
+           <input type="tel" id="edit-phone" placeholder="Телефон" />
+           <button onclick="saveProfile()">Сохранить</button>
+       </div>
+
+       <!-- Форма заказа мероприятия -->
+       <div class="order-event-form" id="order-event-form">
+           <h3>Заказать мероприятие</h3>
+           <input type='text' id='event-code' placeholder='Код мероприятия' />
+           <input type='text' id='event-name' placeholder='Название мероприятия' />
+           <input type='datetime-local' id='event-date-time' placeholder='Дата и время проведения' />
+           <input type='text' id='event-location' placeholder='Место проведения' />
+           <input type='text' id='event-responsible' placeholder='Ответственное лицо' />
+           <input type='text' id='event-participants' placeholder='Список участников (через запятую)' />
+
+           <!-- Состояние заказа устанавливается по умолчанию на "В процессе", это не нужно показывать пользователю -->
+           
+           <button onclick='orderEvent()'>Заказать</button>
+       </div>
+
+       <!-- Список мероприятий -->
+       <div class="orders-list" id="events-list">
+           <h3>Мои мероприятия</h3>
+           <table class="events-table">
+               <thead>
+                   <tr>
+                       <th>Код мероприятия</th>
+                       <th>Название мероприятия</th>
+                       <th>Дата и время проведения</th>
+                       <th>Место проведения</th>
+                       <th>Ответственное лицо</th>
+                       <th>Список участников</th>
+                       <th>Состояние заказа</th>
+                   </tr>
+               </thead>
+               <tbody></tbody> <!-- Здесь будут загружены мероприятия -->
+           </table>
+       </div>
+
+   </div>
+
+   <!-- Скрипт для работы личного кабинета -->
+   <script>
+    // Функция для загрузки данных из sessionStorage
+    function loadProfile() {
+        const currentUser = JSON.parse(sessionStorage.getItem('currentUser'));
+        if (currentUser) {
+            document.getElementById('profile-pic').src = currentUser.avatar || 'free-icon-boy-4537069.png';
+            document.getElementById('user-name').innerText = currentUser.name;
+            document.getElementById('user-email').innerText = `Email: ${currentUser.email}`;
+            document.getElementById('user-phone').innerText = `Телефон: ${currentUser.phone}`;
+            loadEvents(); // Загружаем мероприятия
+        } else {
+            alert('Пожалуйста, войдите в систему.');
+            window.location.href = 'login.html'; // Перенаправление на страницу входа
+        }
+    }
+
+    // Функция для сохранения данных в sessionStorage
+    function saveProfile() {
+        const name = document.getElementById('edit-name').value;
+        const email = document.getElementById('edit-email').value;
+        const phone = document.getElementById('edit-phone').value;
+
+        const currentUser = {
+            name,
+            email,
+            phone,
+            avatar: document.getElementById('profile-pic').src // Сохраняем ссылку на картинку профиля
+        };
+
+        sessionStorage.setItem('currentUser', JSON.stringify(currentUser));
+        loadProfile(); // Обновляем отображаемую информацию
+        toggleEditForm(); // Скрываем форму редактирования
+    }
+
+    // Функция для закрытия всех форм
+    function closeAllForms() {
+        document.getElementById('edit-form').style.display = 'none';
+        document.getElementById('events-list').style.display = 'none';
+        document.getElementById('order-event-form').style.display = 'none';
+    }
+
+    // Функция для отображения/скрытия формы редактирования
+    function toggleEditForm() {
+        closeAllForms(); // Закрываем все формы перед открытием новой
+        const form = document.getElementById('edit-form');
+        form.style.display = form.style.display === 'block' ? 'none' : 'block';
+
+        if (form.style.display === 'block') {
+            // Заполняем форму текущими значениями
+            document.getElementById('edit-name').value = document.getElementById('user-name').innerText;
+            document.getElementById('edit-email').value = document.getElementById('user-email').innerText.replace('Email: ', '');
+            document.getElementById('edit-phone').value = document.getElementById('user-phone').innerText.replace('Телефон: ', '');
+        }
+    }
+
+    // Функция для отображения/скрытия списка мероприятий
+    function toggleEventsList() {
+        closeAllForms(); // Закрываем все формы перед открытием новой
+        const eventsList = document.getElementById('events-list');
+        eventsList.style.display = eventsList.style.display === 'block' ? 'none' : 'block';
+    }
+
+    // Функция для отображения/скрытия формы заказа мероприятия
+    function toggleOrderEventForm() {
+        closeAllForms(); // Закрываем все формы перед открытием новой
+        const orderForm = document.getElementById('order-event-form');
+        orderForm.style.display = orderForm.style.display === 'block' ? 'none' : 'block';
+    }
+
+    // Функция для заказа мероприятия
+    function orderEvent() {
+       const code = document.getElementById('event-code').value;
+       const name = document.getElementById('event-name').value;
+       const dateTime = document.getElementById('event-date-time').value;
+       const location = document.getElementById('event-location').value;
+       const responsible = document.getElementById('event-responsible').value;
+       const participants = document.getElementById('event-participants').value;
+
+       // Получаем текущего пользователя
+       const currentUser = JSON.parse(sessionStorage.getItem('currentUser'));
+
+       // Создаем объект заказа с состоянием по умолчанию "В процессе"
+       const order = {
+           userId: currentUser.email, // Используем email как уникальный идентификатор
+           code,
+           name,
+           dateTime,
+           location,
+           responsible,
+           participants,
+           status: "в процессе"
+       };
+
+       // Получаем существующие заказы из localStorage
+       const orders = JSON.parse(localStorage.getItem('eventOrders')) || [];
+       
+       // Добавляем новый заказ в массив
+       orders.push(order);
+       
+       // Сохраняем обновленный массив в localStorage
+       localStorage.setItem('eventOrders', JSON.stringify(orders));
+
+       alert(`Мероприятие "${name}" заказано!`);
+       
+       // Очистка формы после заказа
+       clearOrderEventForm();
+       toggleOrderEventForm();
+   }
+
+   // Функция для очистки формы заказа мероприятия
+   function clearOrderEventForm() {
+       document.getElementById('event-code').value = '';
+       document.getElementById('event-name').value = '';
+       document.getElementById('event-date-time').value = '';
+       document.getElementById('event-location').value = '';
+       document.getElementById('event-responsible').value = '';
+       document.getElementById('event-participants').value = '';
+   }
+
+   // Функция для выхода из аккаунта
+   function logout() {
+       sessionStorage.removeItem('currentUser');
+       window.location.href = 'login.html'; // Перенаправление на страницу входа
+   }
+
+   // Функция для загрузки мероприятий пользователя
+   function loadEvents() {
+       const currentUser = JSON.parse(sessionStorage.getItem('currentUser'));
+       const orders = JSON.parse(localStorage.getItem("eventOrders")) || [];
+       
+       // Фильтруем мероприятия по userId
+       const userOrders = orders.filter(order => order.userId === currentUser.email);
+       
+       const tbody = document.querySelector('#events-list tbody');
+       tbody.innerHTML = ''; // Очищаем предыдущие данные
+
+       userOrders.forEach(order => {
+           const row = document.createElement("tr");
+           row.innerHTML =
+               `<td>${order.code}</td>` +
+               `<td>${order.name}</td>` +
+               `<td>${order.dateTime}</td>` +
+               `<td>${order.location}</td>` +
+               `<td>${order.responsible}</td>` +
+               `<td>${order.participants}</td>` +
+               `<td>${order.status}</td>`;
+           
+           tbody.appendChild(row);
+       });
+   }
+
+   // Загружаем профиль при загрузке страницы
+   loadProfile();
+ </script>
+</body>
+</html>
